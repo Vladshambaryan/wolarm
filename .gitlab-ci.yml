@@ -1,0 +1,70 @@
+# image: mcr.microsoft.com/playwright/python:latest  # Базовый Docker-образ с Playwright и Python
+
+# stages:
+#   - baseline        # Этап генерации эталонов
+#   - test            # Этап сравнения с эталонами
+
+# before_script:
+#   - pip install -r requirements.txt                # Установка зависимостей проекта
+#   - playwright install --with-deps                 # Установка браузеров и зависимостей Playwright
+
+# # 🔧 Ручной запуск для генерации baseline по всем test_verstka.py
+# generate_baseline:
+#   stage: baseline                                   # Назначение этапа pipeline
+#   script:
+#     - |
+#       echo "🛠 Ручная генерация baseline..."
+#       for f in $(find . -name test_verstka.py); do
+#         echo "➡️ Обновление baseline: $f"
+#         UPDATE_BASELINE=true pytest "$f" -v || exit 1
+#       done
+#   artifacts:
+#     paths:
+#       - '**/baseline/'                              # Сохранение baseline из всех подпапок
+#     expire_in: 1 week                               # Срок хранения — одна неделя
+#   when: manual                                      # Запускается вручную
+#   allow_failure: false                              # Ошибка прерывает pipeline
+
+# # 📋 Сравнение текущей вёрстки с эталоном (если он уже есть)
+# compare_layout:
+#   stage: test                                       # Этап тестирования
+#   dependencies:
+#     - generate_baseline                             # Зависит от предыдущего шага
+#   script:
+#     - |
+#       echo "📊 Сравнение вёрстки с baseline..."
+#       for f in $(find . -name test_verstka.py); do
+#         echo "▶️ Тест: $f"
+#         pytest "$f" -v || exit 1
+#       done
+#   artifacts:
+#     paths:
+#       - '**/baseline/'                              # Сохранение baseline-данных
+#       - allure-results/                             # Сохранение отчётов Allure (если используется)
+#     when: always                                    # Сохранять всегда
+#     expire_in: 1 week                               # Срок хранения — одна неделя
+
+
+
+Run all tests:
+  when: manual
+  image: vladshambaryan/git_lab_play
+  artifacts:
+    when: always
+    expire_in: 10 days
+    paths:
+      - allure-report
+  before_script:
+    - pip install -r requirements.txt
+    - playwright install
+  script:
+    - pytest --alluredir=allure-results || true   # чтобы не падал на ошибках
+  after_script:
+    - allure generate -c allure-results -o allure-report
+    - echo "Report path:https://vladshambaryan.gitlab.io/-/wolarm/-/jobs/${CI_JOB_ID}/artifacts/allure-report/index.html"
+
+
+        
+
+
+

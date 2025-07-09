@@ -1,0 +1,5 @@
+pytest
+playwright
+allure-pytest
+Pillow
+numpy
